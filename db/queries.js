@@ -30,17 +30,16 @@ const getProductInfo = (req, res) => {
   )
     .then(data => {
       Object.assign(results, data);
-      db.many(
-        `
-      SELECT *
-      FROM features
-      WHERE product_id = $1
-      `,
+      return db.many(
+        `SELECT feature, value
+        FROM features
+        WHERE product_id = $1`,
         [product_id]
-      ).then(data => {
-        results.features = data;
-        res.status(200).json(results);
-      });
+      );
+    })
+    .then(data => {
+      results.features = data;
+      res.status(200).json(results);
     })
     .catch(function(error) {
       throw error;
