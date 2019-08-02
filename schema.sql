@@ -1,5 +1,5 @@
 --drop all tables to have a clean start
-drop table features, photos, related, skus, styles, product;
+--drop table features, photos, related, skus, styles, product;
 -- create an empty products table
 CREATE TABLE IF NOT EXISTS Product
 (
@@ -35,6 +35,16 @@ CREATE TABLE IF NOT EXISTS Styles
   sale_price character varying(50),
   original_price integer,
   default_style boolean
+);
+
+-- create an empty photos table
+CREATE TABLE IF NOT EXISTS Photos_temp
+(
+  auto_id serial NOT NULL PRIMARY KEY,
+  id integer,
+  styleId integer REFERENCES Styles(id),
+  thumbnail_url character varying(255),
+  "url" character varying(255)
 );
 
 -- create an empty photos table
