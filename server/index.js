@@ -12,9 +12,12 @@ app.get('/', (req, res) => {
   });
 });
 
-const db = require('./db/queries');
+const db = require('../db/queries');
 app.get('/products/list', db.getProducts);
-app.get('/products', db.getProductInfo);
+app.get('/products/:product_id', db.getProductById);
+app.get('/products/', db.getProductById);
+app.get('/products/:product_id/styles', db.getStyles);
+app.get('/products/:product_id/related', db.getRelatedById);
 
 app.listen(port, () => {
   console.log(`App running on port ${port}.`);

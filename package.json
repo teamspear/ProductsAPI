@@ -2,10 +2,10 @@
   "name": "productsapi",
   "version": "1.0.0",
   "description": "a RESTful api handles product requests from greenfield",
-  "main": "index.js",
+  "main": "server/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon index.js"
+    "start": "nodemon server/index.js"
   },
   "repository": {
     "type": "git",
@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/teamspear/ProductsAPI#readme",
   "dependencies": {
+    "bluebird": "^3.5.5",
     "body-parser": "^1.19.0",
     "express": "^4.17.1",
     "nodemon": "^1.19.1",
