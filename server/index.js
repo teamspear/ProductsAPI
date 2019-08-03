@@ -8,11 +8,11 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
   res.json({
-    info: 'Node.js, Express, and Postgres API',
+    info: 'Node.js, Express, and Postgres API!!!',
   });
 });
 
-const db = require('../db/queries');
+const db = require('./queries');
 app.get('/products/list', db.getProducts);
 app.get('/products/:product_id', db.getProductById);
 app.get('/products/', db.getProductById);
