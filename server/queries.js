@@ -25,7 +25,6 @@ const getProductById = (req, res) => {
   let product_id = req.params.product_id || req.query.product_id || undefined;
   let results = {};
   if (!product_id) {
-    console.log(product_id);
     res.status(400).json('missing product id');
   }
   db.one(
@@ -58,31 +57,77 @@ const getStyles = (req, res) => {
   if (!product_id) {
     res.status(400).json('invalid id');
   }
-  let wait = undefined;
-  db.many(`SELECT * FROM styles where product_id=$1`, [product_id])
-    .then(styles => {
-      wait = styles.length;
-      for (let i = 0; i < styles.length; i++) {
-        db.multi(
-          `SELECT size, quantity FROM skus WHERE styleId=${styles[i].id};
-          SELECT url, thumbnail_url FROM photos WHERE styleId=${styles[i].id}`
-        ).then(([skus, photos]) => {
-          wait--;
-          styles[i].skus = skus;
-          styles[i].photos = photos;
-          if (wait === 0) {
-            res.json({
-              product_id: product_id,
-              results: styles,
-            });
+  let results = [];
+  db.many(
+    `
+    SELECT s.*, 
+        json_agg(DISTINCT p.*) AS photos, 
+        json_agg(DISTINCT sk.*) AS skus
+    FROM (select * from styles where product_id=${product_id}) s
+    JOIN (select * from photos where photos.styleid in (select id from styles where product_id=${product_id})) as p ON p.styleid = s.id
+    JOIN (select * from skus where skus.styleid in (select id from styles where product_id=${product_id})) as sk ON s.id = sk.styleid
+    GROUP BY s.id, s.sale_price, s.original_price, s.default_style, s.name, s.product_id
+ `
+  )
+    .then(data => {
+      return Promise.all(
+        data.map(style => {
+          let obj = {};
+          let skus = style.skus;
+          for (let i = 0; i < skus.length; i++) {
+            obj[skus[i].size] = skus[i].quantity;
           }
-        });
-      }
+          style.skus = obj;
+          results = data;
+        })
+      );
+    })
+    .then(data => {
+      res.send({
+        product_id: product_id,
+        results: results,
+      });
     })
     .catch(err => {
-      throw err;
+      console.log(err);
+      res.send(err);
     });
 };
+
+// const getStyles = (req, res) => {
+//   const product_id = req.params.product_id || undefined;
+//   if (!product_id) {
+//     res.status(400).json('invalid id');
+//   }
+//   let wait = undefined;
+//   db.many(`SELECT * FROM styles where product_id=$1`, [product_id])
+//     .then(styles => {
+//       wait = styles.length;
+//       for (let i = 0; i < styles.length; i++) {
+//         db.multi(
+//           `SELECT size, quantity FROM skus WHERE styleId=${styles[i].id};
+//           SELECT url, thumbnail_url FROM photos WHERE styleId=${styles[i].id}`
+//         )
+//           .then(([skus, photos]) => {
+//             wait--;
+//             styles[i].skus = skus;
+//             styles[i].photos = photos;
+//             if (wait === 0) {
+//               res.json({
+//                 product_id: product_id,
+//                 results: styles,
+//               });
+//             }
+//           })
+//           .catch(err => {
+//             throw err;
+//           });
+//       }
+//     })
+//     .catch(err => {
+//       throw err;
+//     });
+// };
 const getRelatedById = (req, res) => {
   const product_id = req.params.product_id || undefined;
   if (!product_id) {
