@@ -58,46 +58,28 @@ const getStyles = (req, res) => {
   if (!product_id) {
     res.status(400).json('invalid id');
   }
-  let output = {
-    product_id: product_id,
-    results: [],
-  };
-  let listen = true;
+  let wait = undefined;
   db.many(`SELECT * FROM styles where product_id=$1`, [product_id])
     .then(styles => {
-      let results = [];
+      wait = styles.length;
       for (let i = 0; i < styles.length; i++) {
-        let styledata = styles[i];
         db.multi(
-          `SELECT size, quantity FROM skus WHERE styleId=${styledata.id};
-          SELECT url, thumbnail_url FROM photos WHERE styleId=${styledata.id}`
-        )
-          .then(([skus, photos]) => {
-            styledata.skus = skus;
-            styledata.photos = photos;
-            results.push(styledata);
-            if (i === styles.length - 1) {
-              listen = false;
-              output.results = results;
-            }
-          })
-          .catch(err => {
-            listen = false;
-            throw err;
-          });
+          `SELECT size, quantity FROM skus WHERE styleId=${styles[i].id};
+          SELECT url, thumbnail_url FROM photos WHERE styleId=${styles[i].id}`
+        ).then(([skus, photos]) => {
+          wait--;
+          styles[i].skus = skus;
+          styles[i].photos = photos;
+          if (wait === 0) {
+            res.json({
+              product_id: product_id,
+              results: styles,
+            });
+          }
+        });
       }
     })
-    .then(() => {
-      var waitdata = setInterval(function() {
-        console.log(Date.now());
-        if (listen === false) {
-          clearInterval(waitdata);
-          res.send(output);
-        }
-      }, 1000);
-    })
     .catch(err => {
-      res.status(500);
       throw err;
     });
 };
