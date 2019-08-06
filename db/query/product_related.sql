@@ -5,6 +5,11 @@
 
 --- Parameter	Type	Description
 --- product_id	integer	Required ID of the Product requested
-SELECT * 
+EXPLAIN ANALYZE SELECT * 
 FROM related
-WHERE product_id = 99;
+WHERE product_id = 999;
+
+
+EXPLAIN ANALYZE SELECT * 
+FROM related
+WHERE product_id = 999999;

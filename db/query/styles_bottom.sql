@@ -17,3 +17,10 @@ FROM (select * from styles where product_id=990009) s
 JOIN (select * from photos where photos.styleid in (select id from styles where product_id=990009)) as p ON p.styleid = s.id
 JOIN (select * from skus where skus.styleid in (select id from styles where product_id=990009)) as sk ON s.id = sk.styleid
 GROUP BY s.id;
+
+-- select ss.styleid,json_build_object(json_agg(json_build_object(ss.size, ss.quantity))) as sku 
+-- from skus as ss
+-- where ss.styleid 
+-- in (select id from styles where product_id=990009)
+-- group by ss.styleid
+
