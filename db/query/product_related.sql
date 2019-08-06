@@ -5,9 +5,10 @@
 
 --- Parameter	Type	Description
 --- product_id	integer	Required ID of the Product requested
-EXPLAIN ANALYZE SELECT * 
+EXPLAIN ANALYZE SELECT product_id, json_agg(related_product_id) 
 FROM related
-WHERE product_id = 999;
+WHERE product_id = 999
+group by product_id;
 
 
 EXPLAIN ANALYZE SELECT * 

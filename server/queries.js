@@ -185,15 +185,14 @@ const getRelatedById = (req, res) => {
   if (!product_id) {
     res.status(400);
   }
-  db.many(
-    `SELECT related_product_id FROM related WHERE product_id=${product_id}`
+  db.one(
+    `SELECT product_id, json_agg(related_product_id) as related
+    FROM related
+    WHERE product_id = ${product_id}
+    group by product_id;`
   )
     .then(data => {
-      let related = [];
-      data.map(r => {
-        related.push(r.related_product_id);
-      });
-      res.status(200).json(related);
+      res.status(200).json(data.related);
     })
     .catch(err => {
       console.log(err);
