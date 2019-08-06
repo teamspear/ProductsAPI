@@ -1,5 +1,8 @@
 const pgp = require('pg-promise')(/* options */);
 const db = pgp('postgres://sdc:greenfield@localhost:5432/product');
+
+//get a list of product with user specified count and page
+//defualt count is 5, and page is 1
 const getProducts = (req, res) => {
   let limit = req.query.count || 5;
   let offset = req.query.count * (req.query.page - 1) || 0;
@@ -19,6 +22,41 @@ const getProducts = (req, res) => {
     });
 };
 
+// //get product with features by product id
+// const getProductById = (req, res) => {
+//   //when end point if /product/:product_id => product_id is set to params
+//   //when end point if /product[/]?product_id => product_id is set to query
+//   let product_id = req.params.product_id || req.query.product_id || undefined;
+//   let results = {};
+//   if (!product_id) {
+//     res.status(400).json('missing product id');
+//   }
+//   db.one(
+//     `SELECT *
+//     FROM product
+//     WHERE id=$1`,
+//     [product_id]
+//   )
+//     .then(data => {
+//       Object.assign(results, data);
+//       return db.many(
+//         `SELECT feature, value
+//         FROM features
+//         WHERE product_id = $1`,
+//         [product_id]
+//       );
+//     })
+//     .then(data => {
+//       results.features = data;
+//       res.status(200).json(results);
+//     })
+//     .catch(function(error) {
+//       res.status(500);
+//       throw error;
+//     });
+// };
+
+//get product with features by product id
 const getProductById = (req, res) => {
   //when end point if /product/:product_id => product_id is set to params
   //when end point if /product[/]?product_id => product_id is set to query
@@ -28,20 +66,22 @@ const getProductById = (req, res) => {
     res.status(400).json('missing product id');
   }
   db.one(
-    `SELECT *
-    FROM product
-    WHERE id=$1`,
+    `SELECT p.*, json_agg(f.*) as featuresss
+    FROM(
+    (
+      SELECT *
+      FROM product 
+      WHERE product.id=$1
+    )AS p
+    LEFT JOIN 
+    features AS f
+    ON p.id=f.product_id
+    )
+    Group by p.id, p.name, p.slogan, p.description, p.category, p.default_price;
+    `,
     [product_id]
   )
-    .then(data => {
-      Object.assign(results, data);
-      return db.many(
-        `SELECT feature, value
-        FROM features
-        WHERE product_id = $1`,
-        [product_id]
-      );
-    })
+
     .then(data => {
       results.features = data;
       res.status(200).json(results);
@@ -52,6 +92,7 @@ const getProductById = (req, res) => {
     });
 };
 
+//get product styles by product id
 const getStyles = (req, res) => {
   const product_id = req.params.product_id || undefined;
   if (!product_id) {
@@ -128,6 +169,8 @@ const getStyles = (req, res) => {
 //       throw err;
 //     });
 // };
+
+//get related product by product id
 const getRelatedById = (req, res) => {
   const product_id = req.params.product_id || undefined;
   if (!product_id) {
