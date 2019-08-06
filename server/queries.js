@@ -16,9 +16,49 @@ const getProducts = (req, res) => {
     .then(function(data) {
       res.status(200).json(data);
     })
-    .catch(function(error) {
+    .catch(err => {
+      if ((err.name = 'QueryResultError')) {
+        res.status(404);
+      }
       res.status(500);
-      throw error;
+      throw err;
+    });
+};
+
+//get product with features by product id
+const getProductById = (req, res) => {
+  //when end point if /product/:product_id => product_id is set to params
+  //when end point if /product[/]?product_id => product_id is set to query
+  let product_id = req.params.product_id || req.query.product_id || undefined;
+  let results = {};
+  if (!product_id) {
+    res.status(400).json('missing product id');
+  }
+  db.one(
+    `SELECT *
+    FROM product
+    WHERE id=$1`,
+    [product_id]
+  )
+    .then(data => {
+      Object.assign(results, data);
+      return db.many(
+        `SELECT feature, value
+        FROM features
+        WHERE product_id = $1`,
+        [product_id]
+      );
+    })
+    .then(data => {
+      results.features = data;
+      res.status(200).json(results);
+    })
+    .catch(err => {
+      if ((err.name = 'QueryResultError')) {
+        res.status(404);
+      }
+      res.status(500);
+      throw err;
     });
 };
 
@@ -32,20 +72,22 @@ const getProducts = (req, res) => {
 //     res.status(400).json('missing product id');
 //   }
 //   db.one(
-//     `SELECT *
-//     FROM product
-//     WHERE id=$1`,
+//     `SELECT p.*, json_agg(f.*) as features
+//     FROM(
+//     (
+//       SELECT *
+//       FROM product
+//       WHERE product.id=$1
+//     )AS p
+//     LEFT JOIN
+//     features AS f
+//     ON p.id=f.product_id
+//     )
+//     Group by p.id, p.name, p.slogan, p.description, p.category, p.default_price;
+//     `,
 //     [product_id]
 //   )
-//     .then(data => {
-//       Object.assign(results, data);
-//       return db.many(
-//         `SELECT feature, value
-//         FROM features
-//         WHERE product_id = $1`,
-//         [product_id]
-//       );
-//     })
+
 //     .then(data => {
 //       results.features = data;
 //       res.status(200).json(results);
@@ -55,42 +97,6 @@ const getProducts = (req, res) => {
 //       throw error;
 //     });
 // };
-
-//get product with features by product id
-const getProductById = (req, res) => {
-  //when end point if /product/:product_id => product_id is set to params
-  //when end point if /product[/]?product_id => product_id is set to query
-  let product_id = req.params.product_id || req.query.product_id || undefined;
-  let results = {};
-  if (!product_id) {
-    res.status(400).json('missing product id');
-  }
-  db.one(
-    `SELECT p.*, json_agg(f.*) as featuresss
-    FROM(
-    (
-      SELECT *
-      FROM product 
-      WHERE product.id=$1
-    )AS p
-    LEFT JOIN 
-    features AS f
-    ON p.id=f.product_id
-    )
-    Group by p.id, p.name, p.slogan, p.description, p.category, p.default_price;
-    `,
-    [product_id]
-  )
-
-    .then(data => {
-      results.features = data;
-      res.status(200).json(results);
-    })
-    .catch(function(error) {
-      res.status(500);
-      throw error;
-    });
-};
 
 //get product styles by product id
 const getStyles = (req, res) => {
@@ -130,8 +136,11 @@ const getStyles = (req, res) => {
       });
     })
     .catch(err => {
-      console.log(err);
-      res.send(err);
+      if ((err.name = 'QueryResultError')) {
+        res.status(404);
+      }
+      res.status(500);
+      throw err;
     });
 };
 
@@ -187,7 +196,11 @@ const getRelatedById = (req, res) => {
       res.status(200).json(related);
     })
     .catch(err => {
-      res.status(500);
+      console.log(err);
+      if ((err.name = 'QueryResultError')) {
+        res.sendStatus(404);
+      }
+      res.sendStatus(500);
       throw err;
     });
 };
