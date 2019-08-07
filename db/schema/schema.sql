@@ -11,6 +11,10 @@ CREATE TABLE IF NOT EXISTS Product
   category character varying(255),
   default_price integer
 );
+
+-- Add index on id and row number
+Create index idx_product_id on product(id);
+Create index idx_product_row on product(row_number);
 --- as there are bad data, we want to remove some foreignkey constrains, 
 --- we can filter data when querying them;
 CREATE TABLE IF NOT EXISTS Related
@@ -19,6 +23,11 @@ CREATE TABLE IF NOT EXISTS Related
   product_id integer REFERENCES Product(id),
   related_product_id integer
 );
+--- create index on product id
+CREATE INDEX idx_related_productid 
+ON related(product_id);
+
+
 CREATE TABLE IF NOT EXISTS Features
 (
   id serial NOT NULL PRIMARY KEY,
@@ -26,6 +35,10 @@ CREATE TABLE IF NOT EXISTS Features
   feature character varying(255),
   "value" character varying(255)
 );
+
+--- create index on feature
+CREATE INDEX idx_feature_productid ON features(product_id);
+
 
 -- create an empty styles table
 CREATE TABLE IF NOT EXISTS Styles
@@ -38,15 +51,16 @@ CREATE TABLE IF NOT EXISTS Styles
   default_style boolean
 );
 
+
 -- create an empty photos table
-CREATE TABLE IF NOT EXISTS Photos_temp
-(
-  auto_id serial NOT NULL PRIMARY KEY,
-  id integer,
-  styleId integer REFERENCES Styles(id),
-  thumbnail_url character varying(255),
-  "url" character varying(255)
-);
+-- CREATE TABLE IF NOT EXISTS Photos_temp
+-- (
+--   auto_id serial NOT NULL PRIMARY KEY,
+--   id integer,
+--   styleId integer REFERENCES Styles(id),
+--   thumbnail_url character varying(255),
+--   "url" character varying(255)
+-- );
 
 -- create an empty photos table
 CREATE TABLE IF NOT EXISTS Photos
@@ -56,6 +70,8 @@ CREATE TABLE IF NOT EXISTS Photos
   thumbnail_url character varying(255),
   "url" character varying(255)
 );
+CREATE INDEX idx_photos_style
+ON photos(styleid);
 
 -- create an empty sku table
 CREATE TABLE IF NOT EXISTS SKUs
@@ -65,3 +81,6 @@ CREATE TABLE IF NOT EXISTS SKUs
   size character varying(50),
   quantity integer
 );
+
+CREATE INDEX idx_skus_style
+ON skus(styleid);
