@@ -1,0 +1,13 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    - duration: 30
+      arrivalRate: 1000
+  defaults:
+    headers:
+      x-my-service-auth: '987401838271002188298567'
+scenarios:
+  - flow:
+      - log: 'Get products of with random page and count'
+      - get:
+          url: '/products/list?count={{$randomNumber(1,20)}}&page={{$randomNumber(1000,5000)}}'
