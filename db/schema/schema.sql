@@ -3,7 +3,8 @@
 -- create an empty products table
 CREATE TABLE IF NOT EXISTS Product
 (
-  id serial NOT NULL PRIMARY KEY,
+  id PRIMARY KEY,
+  row_number serial NOT NULL,
   "name" character varying(255),
   slogan text,
   "description" text,
