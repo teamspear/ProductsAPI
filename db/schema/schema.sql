@@ -84,3 +84,12 @@ CREATE TABLE IF NOT EXISTS SKUs
 
 CREATE INDEX idx_skus_style
 ON skus(styleid);
+
+CREATE TABLE IF NOT EXISTS ErrorLog
+(
+  id serial PRIMARY Key,
+  code integer,
+  error character,
+  log_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  request character NOT NULL
+);
