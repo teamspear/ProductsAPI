@@ -1,5 +1,26 @@
+// const promise = require('bluebird');
+// promise.config({
+//   longStackTraces: true, // WARNING: Setting this options in production may impact performance.
+// });
+
+// const initOptions = {
+//   promiseLib: promise,
+// };
+
+// const pgp = require('pg-promise')(initOptions);
+
 const pgp = require('pg-promise')(/* options */);
 const db = pgp('postgres://sdc:greenfield@localhost:5432/product');
+
+const logErr = (error, code, request) => {
+  db.one(`insert into errorlog(error, code, request) values ($1, $2, $3)`, [
+    error,
+    code,
+    request,
+  ]).catch(err => {
+    console.log('logged err:', request);
+  });
+};
 
 //get a list of product with user specified count and page
 //defualt count is 5, and page is 1
@@ -9,19 +30,22 @@ const getProducts = (req, res) => {
   db.many(
     `SELECT *
   FROM product
-  LIMIT $1
-  OFFSET $2`,
+  WHERE row_number > $2
+  LIMIT $1`,
     [limit, offset]
   )
     .then(function(data) {
       res.status(200).json(data);
     })
     .catch(err => {
-      if ((err.name = 'QueryResultError')) {
-        res.status(404);
+      console.log(err.code);
+      if (err.code === 'No data returned from the query.') {
+        res.status(404).end();
+        logErr(err, 404, req);
+      } else {
+        res.status(500).end();
+        logErr('error', 500, req);
       }
-      res.status(500);
-      throw err;
     });
 };
 
@@ -32,7 +56,7 @@ const getProductById = (req, res) => {
   let product_id = req.params.product_id || req.query.product_id || undefined;
   let results = {};
   if (!product_id) {
-    res.status(400).json('missing product id');
+    res.status(400).end;
   }
   db.one(
     `SELECT *
@@ -41,24 +65,28 @@ const getProductById = (req, res) => {
     [product_id]
   )
     .then(data => {
-      Object.assign(results, data);
-      return db.many(
-        `SELECT feature, value
-        FROM features
-        WHERE product_id = $1`,
-        [product_id]
-      );
+      if (data) {
+        Object.assign(results, data);
+        return db.many(
+          `SELECT feature, value
+          FROM features
+          WHERE product_id = $1`,
+          [product_id]
+        );
+      }
     })
     .then(data => {
       results.features = data;
       res.status(200).json(results);
     })
     .catch(err => {
-      if ((err.name = 'QueryResultError')) {
-        res.status(404);
+      if (err.message === 'No data returned from the query.') {
+        res.status(404).end();
+        logErr(err.message, 404, err.query);
+      } else {
+        res.status(500).end();
+        logErr(err.message, 500, err.query);
       }
-      res.status(500);
-      throw err;
     });
 };
 
@@ -93,7 +121,7 @@ const getProductById = (req, res) => {
 //       res.status(200).json(results);
 //     })
 //     .catch(function(error) {
-//       res.status(500);
+//       res.status(500).end();
 //       throw error;
 //     });
 // };
@@ -102,7 +130,7 @@ const getProductById = (req, res) => {
 const getStyles = (req, res) => {
   const product_id = req.params.product_id || undefined;
   if (!product_id) {
-    res.status(400).json('invalid id');
+    res.status(400).end();
   }
   let results = [];
   db.many(
@@ -136,11 +164,13 @@ const getStyles = (req, res) => {
       });
     })
     .catch(err => {
-      if ((err.name = 'QueryResultError')) {
-        res.status(404);
+      if (err.message === 'No data returned from the query.') {
+        res.status(404).end();
+        logErr(err.message, 404, err.query);
+      } else {
+        res.status(500).end();
+        logErr(err.message, 500, err.query);
       }
-      res.status(500);
-      throw err;
     });
 };
 
@@ -170,12 +200,12 @@ const getStyles = (req, res) => {
 //             }
 //           })
 //           .catch(err => {
-//             throw err;
+//             console.log(err)
 //           });
 //       }
 //     })
 //     .catch(err => {
-//       throw err;
+//       console.log(err)
 //     });
 // };
 
@@ -183,7 +213,7 @@ const getStyles = (req, res) => {
 const getRelatedById = (req, res) => {
   const product_id = req.params.product_id || undefined;
   if (!product_id) {
-    res.status(400);
+    res.status(400).end();
   }
   db.one(
     `SELECT product_id, json_agg(related_product_id) as related
@@ -195,12 +225,13 @@ const getRelatedById = (req, res) => {
       res.status(200).json(data.related);
     })
     .catch(err => {
-      console.log(err);
-      if ((err.name = 'QueryResultError')) {
-        res.sendStatus(404);
+      if (err.message === 'No data returned from the query.') {
+        res.status(404).end();
+        logErr(err.message, 404, err.query);
+      } else {
+        res.status(500).end();
+        logErr(err.message, 500, err.query);
       }
-      res.sendStatus(500);
-      throw err;
     });
 };
 module.exports = {

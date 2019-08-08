@@ -17,6 +17,11 @@ const relatedByProductId = `/products/${randomNumber}/related`;
 
 app.use(router);
 
+//close connection after testing
+afterAll(async () => {
+  await new Promise(resolve => setTimeout(() => resolve(), 500)); // avoid jest open handle error
+});
+
 //==================== Products API test ====================
 
 /**
