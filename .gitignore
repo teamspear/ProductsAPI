@@ -1,7 +1,7 @@
 /DB/dataset
-/server/config
-newrelic
 ProjectGreenField.pem
+sec
+newrelic.js
 # Logs
 logs
 *.log
