@@ -3,7 +3,7 @@
 -- create an empty products table
 CREATE TABLE IF NOT EXISTS Product
 (
-  id PRIMARY KEY,
+  id integer PRIMARY KEY,
   row_number serial NOT NULL,
   "name" character varying(255),
   slogan text,
@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS Product
 -- Add index on id and row number
 Create index idx_product_id on product(id);
 Create index idx_product_row on product(row_number);
+
 --- as there are bad data, we want to remove some foreignkey constrains, 
 --- we can filter data when querying them;
 CREATE TABLE IF NOT EXISTS Related
@@ -89,7 +90,7 @@ CREATE TABLE IF NOT EXISTS ErrorLog
 (
   id serial PRIMARY Key,
   code integer,
-  error character,
-  log_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  request character NOT NULL
+  error text,
+  request text,
+  log_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

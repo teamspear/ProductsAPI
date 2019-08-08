@@ -1,6 +1,6 @@
 /DB/dataset
-newrelic
-
+config
+ProjectGreenField.pem
 # Logs
 logs
 *.log
