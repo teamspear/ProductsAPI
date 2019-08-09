@@ -10,7 +10,10 @@
 // const pgp = require('pg-promise')(initOptions);
 
 const pgp = require('pg-promise')(/* options */);
-const db = pgp('postgres://sdc:greenfield@localhost:5432/product');
+//const db = pgp('postgres://sdc:greenfield@localhost:5432/product');
+const db = pgp(
+  'postgres://power_user:greenfield@ec2-52-90-40-132.compute-1.amazonaws.com:5432/products'
+);
 
 const logErr = (error, code, request) => {
   db.one(`insert into errorlog(error, code, request) values ($1, $2, $3)`, [
