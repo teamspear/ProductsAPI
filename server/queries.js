@@ -12,7 +12,7 @@
 const pgp = require('pg-promise')(/* options */);
 //const db = pgp('postgres://sdc:greenfield@localhost:5432/product');
 const db = pgp(
-  'postgres://power_user:greenfield@ec2-52-90-40-132.compute-1.amazonaws.com:5432/products'
+  'postgres://power_user:greenfield@ec2-34-230-49-12.compute-1.amazonaws.com:5432/products'
 );
 
 const logErr = (error, code, request) => {
@@ -44,10 +44,10 @@ const getProducts = (req, res) => {
       console.log(err.code);
       if (err.code === 'No data returned from the query.') {
         res.status(404).end();
-        logErr(err, 404, req);
+        logErr(err, 404, err.query);
       } else {
         res.status(500).end();
-        logErr('error', 500, req);
+        logErr('error', 500, err.query);
       }
     });
 };
