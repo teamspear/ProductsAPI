@@ -30,14 +30,14 @@ const getProducts = (req, res) => {
   return client.get(query, (err, result) => {
     // If that key exist in Redis store
     if (result) {
-      res.status(201).json(JSON.parse(result));
+      res.status(200).json(JSON.parse(result));
     } else {
       return db
         .many(query)
         .then(function(data) {
+          res.status(200).json(data);
           client.setex(query, 3600, JSON.stringify(data));
           // Send JSON response to client
-          res.status(202).json(data);
           // })
         })
         .catch(err => {
@@ -64,31 +64,41 @@ const getProductById = (req, res) => {
     res.status(400).end;
   }
   const query = `SELECT * FROM product WHERE id=${product_id}`;
-  db.one(query)
-    .then(data => {
-      if (data) {
-        Object.assign(results, data);
-        return db.many(
-          `SELECT feature, value
+  // Try fetching the result from Redis first in case we have it cached
+  return client.get(query, (err, result) => {
+    // If that key exist in Redis store
+    if (result) {
+      res.status(200).json(JSON.parse(result));
+    } else {
+      return db
+        .one(query)
+        .then(data => {
+          if (data) {
+            Object.assign(results, data);
+            return db.many(
+              `SELECT feature, value
           FROM features
           WHERE product_id = $1`,
-          [product_id]
-        );
-      }
-    })
-    .then(data => {
-      results.features = data;
-      res.status(200).json(results);
-    })
-    .catch(err => {
-      if (err.message === 'No data returned from the query.') {
-        res.status(404).end();
-        logErr(err.message, 404, query);
-      } else {
-        res.status(500).end();
-        logErr(err.message, 500, query);
-      }
-    });
+              [product_id]
+            );
+          }
+        })
+        .then(data => {
+          results.features = data;
+          res.status(200).json(results);
+          client.setex(query, 3600, JSON.stringify(results));
+        })
+        .catch(err => {
+          if (err.message === 'No data returned from the query.') {
+            res.status(404).end();
+            logErr(err.message, 404, query);
+          } else {
+            res.status(500).end();
+            logErr(err.message, 500, query);
+          }
+        });
+    }
+  });
 };
 
 // //get product with features by product id
