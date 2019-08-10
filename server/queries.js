@@ -25,16 +25,12 @@ const logErr = (error, code, request) => {
 const getProducts = (req, res) => {
   let limit = req.query.count || 5;
   let offset = req.query.count * (req.query.page - 1) || 0;
-  let query = `SELECT *
-              FROM product
-              WHERE row_number > ${offset}
-              LIMIT ${limit}`;
+  let query = `SELECT * FROM product WHERE row_number > ${offset} LIMIT ${limit}`;
   // Try fetching the result from Redis first in case we have it cached
   return client.get(query, (err, result) => {
     // If that key exist in Redis store
     if (result) {
       res.status(201).json(JSON.parse(result));
-      console.log('from redis');
     } else {
       return db
         .many(query)
@@ -42,17 +38,16 @@ const getProducts = (req, res) => {
           client.setex(query, 3600, JSON.stringify(data));
           // Send JSON response to client
           res.status(202).json(data);
-          console.log('from db');
           // })
         })
         .catch(err => {
           console.log(err.code);
           if (err.code === 'No data returned from the query.') {
             res.status(404).end();
-            logErr(err, 404, err.query);
+            logErr(err, 404, query);
           } else {
             res.status(500).end();
-            logErr('error', 500, err.query);
+            logErr('error', 500, query);
           }
         });
     }
@@ -68,12 +63,8 @@ const getProductById = (req, res) => {
   if (!product_id) {
     res.status(400).end;
   }
-  db.one(
-    `SELECT *
-    FROM product
-    WHERE id=$1`,
-    [product_id]
-  )
+  const query = `SELECT * FROM product WHERE id=${product_id}`;
+  db.one(query)
     .then(data => {
       if (data) {
         Object.assign(results, data);
@@ -92,10 +83,10 @@ const getProductById = (req, res) => {
     .catch(err => {
       if (err.message === 'No data returned from the query.') {
         res.status(404).end();
-        logErr(err.message, 404, err.query);
+        logErr(err.message, 404, query);
       } else {
         res.status(500).end();
-        logErr(err.message, 500, err.query);
+        logErr(err.message, 500, query);
       }
     });
 };
@@ -143,17 +134,13 @@ const getStyles = (req, res) => {
     res.status(400).end();
   }
   let results = [];
-  db.many(
-    `
-    SELECT s.*, 
-        json_agg(DISTINCT p.*) AS photos, 
-        json_agg(DISTINCT sk.*) AS skus
+  const query = `
+  SELECT s.*, json_agg(DISTINCT p.*) AS photos, json_agg(DISTINCT sk.*) AS skus
     FROM (select * from styles where product_id=${product_id}) s
     JOIN (select * from photos where photos.styleid in (select id from styles where product_id=${product_id})) as p ON p.styleid = s.id
     JOIN (select * from skus where skus.styleid in (select id from styles where product_id=${product_id})) as sk ON s.id = sk.styleid
-    GROUP BY s.id, s.sale_price, s.original_price, s.default_style, s.name, s.product_id
- `
-  )
+    GROUP BY s.id, s.sale_price, s.original_price, s.default_style, s.name, s.product_id`;
+  db.many(query)
     .then(data => {
       return Promise.all(
         data.map(style => {
@@ -225,22 +212,22 @@ const getRelatedById = (req, res) => {
   if (!product_id) {
     res.status(400).end();
   }
-  db.one(
-    `SELECT product_id, json_agg(related_product_id) as related
+  const query = `
+    SELECT product_id, json_agg(related_product_id) as related
     FROM related
     WHERE product_id = ${product_id}
-    group by product_id;`
-  )
+    group by product_id;`;
+  db.one(query)
     .then(data => {
       res.status(200).json(data.related);
     })
     .catch(err => {
       if (err.message === 'No data returned from the query.') {
         res.status(404).end();
-        logErr(err.message, 404, err.query);
+        logErr(err.message, 404, query);
       } else {
         res.status(500).end();
-        logErr(err.message, 500, err.query);
+        logErr(err.message, 500, query);
       }
     });
 };
