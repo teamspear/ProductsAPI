@@ -243,19 +243,28 @@ const getRelatedById = (req, res) => {
     FROM related
     WHERE product_id = ${product_id}
     group by product_id;`;
-  db.one(query)
-    .then(data => {
-      res.status(200).json(data.related);
-    })
-    .catch(err => {
-      if (err.message === 'No data returned from the query.') {
-        res.status(404).end();
-        logErr(err.message, 404, query);
-      } else {
-        res.status(500).end();
-        logErr(err.message, 500, query);
-      }
-    });
+  return client.get(query, (err, result) => {
+    // If that key exist in Redis store
+    if (result) {
+      res.status(200).json(JSON.parse(result));
+    } else {
+      return db
+        .one(query)
+        .then(data => {
+          res.status(200).json(data.related);
+          client.setex(query, 3600, JSON.stringify(data.related));
+        })
+        .catch(err => {
+          if (err.message === 'No data returned from the query.') {
+            res.status(404).end();
+            logErr(err.message, 404, query);
+          } else {
+            res.status(500).end();
+            logErr(err.message, 500, query);
+          }
+        });
+    }
+  });
 };
 module.exports = {
   getProducts,
