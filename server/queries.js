@@ -25,26 +25,38 @@ const logErr = (error, code, request) => {
 const getProducts = (req, res) => {
   let limit = req.query.count || 5;
   let offset = req.query.count * (req.query.page - 1) || 0;
-  db.many(
-    `SELECT *
-  FROM product
-  WHERE row_number > $2
-  LIMIT $1`,
-    [limit, offset]
-  )
-    .then(function(data) {
-      res.status(200).json(data);
-    })
-    .catch(err => {
-      console.log(err.code);
-      if (err.code === 'No data returned from the query.') {
-        res.status(404).end();
-        logErr(err, 404, err.query);
-      } else {
-        res.status(500).end();
-        logErr('error', 500, err.query);
-      }
-    });
+  let query = `SELECT *
+              FROM product
+              WHERE row_number > ${offset}
+              LIMIT ${limit}`;
+  // Try fetching the result from Redis first in case we have it cached
+  return client.get(query, (err, result) => {
+    // If that key exist in Redis store
+    if (result) {
+      res.status(201).json(JSON.parse(result));
+      console.log('from redis');
+    } else {
+      return db
+        .many(query)
+        .then(function(data) {
+          client.setex(query, 3600, JSON.stringify(data));
+          // Send JSON response to client
+          res.status(202).json(data);
+          console.log('from db');
+          // })
+        })
+        .catch(err => {
+          console.log(err.code);
+          if (err.code === 'No data returned from the query.') {
+            res.status(404).end();
+            logErr(err, 404, err.query);
+          } else {
+            res.status(500).end();
+            logErr('error', 500, err.query);
+          }
+        });
+    }
+  });
 };
 
 //get product with features by product id
