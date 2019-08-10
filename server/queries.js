@@ -150,35 +150,51 @@ const getStyles = (req, res) => {
     JOIN (select * from photos where photos.styleid in (select id from styles where product_id=${product_id})) as p ON p.styleid = s.id
     JOIN (select * from skus where skus.styleid in (select id from styles where product_id=${product_id})) as sk ON s.id = sk.styleid
     GROUP BY s.id, s.sale_price, s.original_price, s.default_style, s.name, s.product_id`;
-  db.many(query)
-    .then(data => {
-      return Promise.all(
-        data.map(style => {
-          let obj = {};
-          let skus = style.skus;
-          for (let i = 0; i < skus.length; i++) {
-            obj[skus[i].size] = skus[i].quantity;
-          }
-          style.skus = obj;
-          results = data;
+  return client.get(query, (err, result) => {
+    // If that key exist in Redis store
+    if (result) {
+      res.status(200).json(JSON.parse(result));
+    } else {
+      return db
+        .many(query)
+        .then(data => {
+          return Promise.all(
+            data.map(style => {
+              let obj = {};
+              let skus = style.skus;
+              for (let i = 0; i < skus.length; i++) {
+                obj[skus[i].size] = skus[i].quantity;
+              }
+              style.skus = obj;
+              results = data;
+            })
+          );
         })
-      );
-    })
-    .then(data => {
-      res.send({
-        product_id: product_id,
-        results: results,
-      });
-    })
-    .catch(err => {
-      if (err.message === 'No data returned from the query.') {
-        res.status(404).end();
-        logErr(err.message, 404, err.query);
-      } else {
-        res.status(500).end();
-        logErr(err.message, 500, err.query);
-      }
-    });
+        .then(data => {
+          res.send({
+            product_id: product_id,
+            results: results,
+          });
+          client.setex(
+            query,
+            3600,
+            JSON.stringify({
+              product_id: product_id,
+              results: results,
+            })
+          );
+        })
+        .catch(err => {
+          if (err.message === 'No data returned from the query.') {
+            res.status(404).end();
+            logErr(err.message, 404, query);
+          } else {
+            res.status(500).end();
+            logErr(err.message, 500, query);
+          }
+        });
+    }
+  });
 };
 
 // const getStyles = (req, res) => {
