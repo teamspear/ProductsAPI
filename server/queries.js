@@ -1,13 +1,8 @@
-// const promise = require('bluebird');
-// promise.config({
-//   longStackTraces: true, // WARNING: Setting this options in production may impact performance.
-// });
-
-// const initOptions = {
-//   promiseLib: promise,
-// };
-
-// const pgp = require('pg-promise')(initOptions);
+const redis = require('redis');
+const client = redis.createClient({
+  host: 'redis-server',
+  port: 6379,
+});
 
 const pgp = require('pg-promise')(/* options */);
 //const db = pgp('postgres://sdc:greenfield@localhost:5432/product');
