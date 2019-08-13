@@ -3,14 +3,12 @@ services:
   redis-server:
     image: 'redis'
     deploy:
-      mode: replicated
-      replicas: 3
+      mode: global
   node-app:
     depends_on:
       - redis-server
     deploy:
-      mode: replicated
-      replicas: 3
+      mode: global
     image: 'xiexiaodocker/greenfield'
 
     ports:
