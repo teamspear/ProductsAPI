@@ -2,6 +2,7 @@ version: '3'
 services:
   redis-server:
     image: 'redis'
+    command: ['redis-server', '--bind', 'redis-server', '--port', '6379']
     deploy:
       mode: global
   node-app:
