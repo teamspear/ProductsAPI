@@ -1,8 +1,5 @@
 const redis = require('redis');
-const client = redis.createClient({
-  host: 'redis-server',
-  port: 6379,
-});
+const client = redis.createClient();
 
 const pgp = require('pg-promise')(/* options */);
 //const db = pgp('postgres://sdc:greenfield@localhost:5432/product');
