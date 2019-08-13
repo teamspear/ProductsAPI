@@ -4,7 +4,6 @@ services:
     image: 'redis'
     deploy:
       mode: global
-    command: ['redis-server', '--bind', 'redis-server', '--port', '6379']
   node-app:
     depends_on:
       - redis-server
