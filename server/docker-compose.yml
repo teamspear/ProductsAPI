@@ -2,8 +2,16 @@ version: '3'
 services:
   redis-server:
     image: 'redis'
+    deploy:
+      mode: replicated
+      replicas: 3
   node-app:
+    depends_on:
+      - redis-server
+    deploy:
+      mode: replicated
+      replicas: 3
     image: 'xiexiaodocker/greenfield'
-    restart: unless-stopped
+
     ports:
       - '80:3000'
