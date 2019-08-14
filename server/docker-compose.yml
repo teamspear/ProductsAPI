@@ -4,12 +4,13 @@ services:
     image: 'redis'
     deploy:
       mode: global
+    ports:
+      - '6379:6379'
   node-app:
     depends_on:
       - redis-server
     deploy:
       mode: global
     image: 'xiexiaodocker/greenfield'
-
     ports:
       - '80:3000'
